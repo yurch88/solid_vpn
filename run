@@ -5,6 +5,9 @@ if [ -z "$SERVER_ADDRESS" ] || [ -z "$SERVERPORT" ]; then
     exit 1
 fi
 
+server_address_prefix=$(echo $SERVER_ADDRESS | awk -F '.' '{print $1"."$2"."$3}')
+server_final_address="${server_address_prefix}.1/24"
+
 interfaces=`find /etc/wireguard -type f -name "*.conf"`
 if [ -z "$interfaces" ]; then
     echo "$(date): No configuration found. Generating default wg0.conf..."
@@ -17,7 +20,7 @@ if [ -z "$interfaces" ]; then
     cat <<EOF > /etc/wireguard/wg0.conf
 [Interface]
 PrivateKey = $server_private_key
-Address = $SERVER_ADDRESS
+Address = $server_final_address
 ListenPort = $SERVERPORT
 PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
